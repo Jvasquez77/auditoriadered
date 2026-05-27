@@ -14,6 +14,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./backend/migrations/001_initial_schema.sql:/docker-entrypoint-initdb.d/001_initial_schema.sql
+      - ./backend/migrations/002_add_olt_entity.sql:/docker-entrypoint-initdb.d/002_add_olt_entity.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d network_audit_db"]
       interval: 5s

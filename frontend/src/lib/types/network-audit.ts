@@ -6,6 +6,50 @@
  */
 
 // ---------------------------------------------------------------------------
+// Dispositivo OLT
+// ---------------------------------------------------------------------------
+export type OltStatus = 'ACTIVO' | 'INACTIVO' | 'MANTENIMIENTO';
+
+export interface OltRead {
+	id: string;
+	olt_id: string;
+	name: string;
+	hub_id: string;
+	localidad: string;
+	ip_address: string | null;
+	brand: string | null;
+	model: string | null;
+	total_ports: number;
+	status: OltStatus;
+	created_at: string;
+	port_count: number;
+}
+
+export interface OltDetailRead extends OltRead {
+	ports: OltPortRead[];
+}
+
+export interface OltCreate {
+	olt_id: string;
+	name: string;
+	hub_id: string;
+	localidad: string;
+	ip_address?: string;
+	brand?: string;
+	model?: string;
+	total_ports?: number;
+	status?: OltStatus;
+}
+
+export interface OltPortForOltCreate {
+	port_id: string;
+	port_occupancy_percentage: number;
+	connected_clients_count: number;
+	current_sfp_tx_power_dbm: number;
+	client_powers?: number[];
+}
+
+// ---------------------------------------------------------------------------
 // Configuración de umbrales
 // ---------------------------------------------------------------------------
 export interface ThresholdRead {
@@ -20,6 +64,7 @@ export interface ThresholdRead {
 // ---------------------------------------------------------------------------
 export interface OltPortRead {
 	id: string;
+	olt_pk_id: string | null;
 	olt_id: string;
 	port_id: string;
 	hub_id: string;

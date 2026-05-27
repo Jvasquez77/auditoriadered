@@ -20,6 +20,7 @@ from app.routers import (
     n1_router,
     n2_router,
     olt_ports_router,
+    olts_router,
     reports_router,
 )
 
@@ -58,6 +59,7 @@ if os.path.exists(settings.MEDIA_DIR):
 
 # Registrar routers bajo el prefijo v1
 prefix = settings.API_V1_PREFIX
+app.include_router(olts_router, prefix=prefix)
 app.include_router(olt_ports_router, prefix=prefix)
 app.include_router(n1_router, prefix=prefix)
 app.include_router(n2_router, prefix=prefix)

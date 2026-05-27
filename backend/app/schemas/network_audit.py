@@ -35,6 +35,47 @@ class ThresholdUpdate(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Dispositivo OLT
+# ---------------------------------------------------------------------------
+class OltCreate(BaseModel):
+    olt_id: str
+    name: str
+    hub_id: str
+    localidad: str
+    ip_address: Optional[str] = None
+    brand: Optional[str] = None
+    model: Optional[str] = None
+    total_ports: int = Field(default=16, ge=1, le=64)
+    status: str = Field(default="ACTIVO")
+
+
+class OltUpdate(BaseModel):
+    name: Optional[str] = None
+    hub_id: Optional[str] = None
+    localidad: Optional[str] = None
+    ip_address: Optional[str] = None
+    brand: Optional[str] = None
+    model: Optional[str] = None
+    total_ports: Optional[int] = Field(None, ge=1, le=64)
+    status: Optional[str] = None
+
+
+class OltRead(_Base):
+    id: str
+    olt_id: str
+    name: str
+    hub_id: str
+    localidad: str
+    ip_address: Optional[str] = None
+    brand: Optional[str] = None
+    model: Optional[str] = None
+    total_ports: int
+    status: str
+    created_at: datetime
+    port_count: int = 0
+
+
+# ---------------------------------------------------------------------------
 # Puerto OLT
 # ---------------------------------------------------------------------------
 class OltPortCreate(BaseModel):
@@ -45,6 +86,16 @@ class OltPortCreate(BaseModel):
     port_occupancy_percentage: float = Field(..., ge=0, le=100)
     connected_clients_count: int = Field(..., ge=0)
     current_sfp_tx_power_dbm: float
+    olt_pk_id: Optional[str] = None  # FK al dispositivo OLT padre
+
+
+class OltPortForOltCreate(BaseModel):
+    """Creación de puerto anidada bajo /olts/{id}/ports — no requiere olt_id/hub/localidad."""
+    port_id: str
+    port_occupancy_percentage: float = Field(..., ge=0, le=100)
+    connected_clients_count: int = Field(..., ge=0)
+    current_sfp_tx_power_dbm: float
+    client_powers: List[float] = Field(default_factory=list)
 
 
 class OltPortUpdate(BaseModel):
@@ -55,6 +106,7 @@ class OltPortUpdate(BaseModel):
 
 class OltPortRead(_Base):
     id: str
+    olt_pk_id: Optional[str] = None
     olt_id: str
     port_id: str
     hub_id: str
@@ -63,8 +115,12 @@ class OltPortRead(_Base):
     connected_clients_count: int
     current_sfp_tx_power_dbm: float
     last_sync_at: datetime
-    # Flags calculados en servicio
     sfp_alert: bool = False
+
+
+class OltDetailRead(OltRead):
+    """OLT con todos sus puertos y el conteo real de hijos."""
+    ports: List[OltPortRead] = Field(default_factory=list)
 
 
 class OltPortSyncRequest(BaseModel):

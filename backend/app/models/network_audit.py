@@ -50,7 +50,50 @@ class ThresholdsConfig(Base):
 
 
 # ---------------------------------------------------------------------------
-# 1. Puerto OLT
+# 1. Dispositivo OLT (entidad padre de puertos)
+# ---------------------------------------------------------------------------
+class Olt(Base):
+    __tablename__ = "olts"
+    __table_args__ = {"schema": "network_audit"}
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=_uuid)
+    olt_id: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    hub_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    localidad: Mapped[str] = mapped_column(String(100), nullable=False)
+    ip_address: Mapped[Optional[str]] = mapped_column(String(50))
+    brand: Mapped[Optional[str]] = mapped_column(String(100))
+    model: Mapped[Optional[str]] = mapped_column(String(100))
+    total_ports: Mapped[int] = mapped_column(Integer, nullable=False, default=16)
+    status: Mapped[str] = mapped_column(String(50), nullable=False, default="ACTIVO")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    ports: Mapped[List["OltPort"]] = relationship(
+        back_populates="olt",
+        cascade="all, delete-orphan",
+        foreign_keys="OltPort.olt_pk_id",
+    )
+
+    # ------------------------------------------------------------------
+    # Lógica de negocio
+    # ------------------------------------------------------------------
+    @property
+    def has_sfp_alerts(self) -> bool:
+        return any(p.sfp_alert for p in self.ports)
+
+    @property
+    def has_blocked_tramos(self) -> bool:
+        return any(
+            n1.otdr_status == "BLOQUEADO"
+            for p in self.ports
+            for n1 in p.n1_infrastructure
+        )
+
+
+# ---------------------------------------------------------------------------
+# 2. Puerto OLT
 # ---------------------------------------------------------------------------
 class OltPort(Base):
     __tablename__ = "olt_ports"
@@ -60,6 +103,12 @@ class OltPort(Base):
     )
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=_uuid)
+    # FK opcional al dispositivo OLT padre (nullable para datos pre-migración)
+    olt_pk_id: Mapped[Optional[str]] = mapped_column(
+        UUID(as_uuid=False),
+        ForeignKey("network_audit.olts.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     olt_id: Mapped[str] = mapped_column(String(100), nullable=False)
     port_id: Mapped[str] = mapped_column(String(50), nullable=False)
     hub_id: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -72,6 +121,10 @@ class OltPort(Base):
     )
 
     # Relaciones
+    olt: Mapped[Optional["Olt"]] = relationship(
+        back_populates="ports",
+        foreign_keys=[olt_pk_id],
+    )
     n1_infrastructure: Mapped[List["N1Infrastructure"]] = relationship(
         back_populates="olt_port", cascade="all, delete-orphan"
     )
